@@ -37,7 +37,9 @@ def get_replica_count(aip_uuid):
 
     :returns: Number of replicas (int)
     """
-    return Package.objects.filter(replicated_package=aip_uuid).count()
+    return Package.objects.filter(
+        replicated_package=aip_uuid, status=Package.UPLOADED
+    ).count()
 
 
 class Command(StorageServiceCommand):
@@ -78,6 +80,7 @@ class Command(StorageServiceCommand):
             current_location=aip_store_uuid,
             package_type=Package.AIP,
             replicated_package=None,
+            status=Package.UPLOADED,
         ).all()
         if not aips:
             raise CommandError(
