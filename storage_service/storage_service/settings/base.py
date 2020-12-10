@@ -29,6 +29,14 @@ def get_env_variable(var_name):
         raise ImproperlyConfigured(error_msg)
 
 
+def is_true(env_str):
+    return env_str.lower() in ["true", "yes", "on", "1"]
+
+
+def is_false(env_str):
+    return env_str.lower() in ["false", "no", "off", "0"]
+
+
 # ######## PATH CONFIGURATION
 # Absolute filesystem path to the Django project directory:
 DJANGO_ROOT = dirname(dirname(abspath(__file__)))
@@ -181,6 +189,39 @@ TEMPLATES = [
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#authentication-backends
 
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
+
+try:
+    PASSWORD_MINIMUM_LENGTH = int(environ.get("SS_AUTH_PASSWORD_MINIMUM_LENGTH", 8))
+except ValueError:
+    PASSWORD_MINIMUM_LENGTH = 8
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": PASSWORD_MINIMUM_LENGTH},
+    }
+]
+
+# Additional password validation is enabled by default. To disable, set the
+# following AUTH_PASSWORD_* settings to false in the environment.
+if not is_false(environ.get("SS_AUTH_PASSWORD_COMMON_VALIDATION", "")):
+    AUTH_PASSWORD_VALIDATORS += [
+        {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"}
+    ]
+
+if not is_false(
+    environ.get("SS_AUTH_PASSWORD_USER_ATTRIBUTE_SIMILARITY_VALIDATION", "")
+):
+    AUTH_PASSWORD_VALIDATORS += [
+        {
+            "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+        }
+    ]
+
+if not is_false(environ.get("SS_AUTH_PASSWORD_COMPLEXITY_VALIDATION", "")):
+    AUTH_PASSWORD_VALIDATORS += [
+        {"NAME": "administration.validators.PasswordComplexityValidator"}
+    ]
 # ######### END AUTHENTICATION CONFIGURATION
 
 # ######### MIDDLEWARE CONFIGURATION
@@ -314,10 +355,6 @@ WSGI_APPLICATION = "%s.wsgi.application" % SITE_NAME
 # ######## END WSGI CONFIGURATION
 
 ALLOW_USER_EDITS = True
-
-
-def is_true(env_str):
-    return env_str.lower() in ["true", "yes", "on", "1"]
 
 
 ######### LDAP CONFIGURATION #########
